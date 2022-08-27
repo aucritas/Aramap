@@ -109,8 +109,8 @@ fun songThingyPixels() {
         LazyHorizontalGrid(
             state = listState,
             rows = GridCells.Fixed(Data.heightBlockSize),
-            //verticalArrangement = Arrangement.spacedBy(4.dp),
-            //horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(conta) { item ->
                 Box(
