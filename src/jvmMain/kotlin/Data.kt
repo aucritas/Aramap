@@ -8,4 +8,9 @@ object Data{
     lateinit var showImage : MutableState<Boolean>
     lateinit var idx: MutableState<Int>
     lateinit var isSongLoaded : MutableState<Boolean>
+    var heightLayers : Int = 0
+    var widthLayers : Int = 0
+    const val heightBlockSize = 9
+    const val widthBlockSize = 16
+    lateinit var pixelVerticalRows : ArrayList<ArrayList<Pixel>>
 }
