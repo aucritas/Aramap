@@ -1,15 +1,17 @@
 import Data.idx
 import Data.showFileDialog
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import kotlinx.coroutines.launch
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -66,32 +69,60 @@ fun fileDialog(
 
 
 @Composable
+fun redLine(){
+    Box(
+        modifier = Modifier.width(10.dp).fillMaxHeight().clip(RectangleShape).background(Color(255,0,0,100))
+    )
+}
+
+@Composable
 fun songThingyPixels() {
 
-    var conta = 0
+
+    val listState = rememberLazyGridState()
+    val scope = rememberCoroutineScope()
+
+    var conta = 4
     val linearized =
         arrayListOf<Pixel>() //todo: there's probably a better way to do this, but at this scale it should not matter much
+
+    //Cheating the UI by adding fake black row at start
+    for (i in 0 until 9*4){
+        linearized.add(Pixel(40,60,80))
+    }
+
     for (pixelVerticalRow in Data.pixelVerticalRows) {
         for (pixel in pixelVerticalRow) {
             linearized.add(pixel)
             conta++
         }
     }
-
-
-
-    LazyHorizontalGrid(
-        rows = GridCells.Fixed(Data.heightBlockSize),
-        //verticalArrangement = Arrangement.spacedBy(4.dp),
-        //horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        items(conta) { item ->
-            Box(
-                modifier = Modifier.size(10.dp).clip(RectangleShape)
-                    .background(Color(linearized[item].r, linearized[item].g, linearized[item].b))
-            )
-        }
+    Button(onClick = {
+        scope.launch {
+            listState.scrollBy(10f)}
+    }){
+        Text("scroll")
     }
+    Box{
+
+
+        LazyHorizontalGrid(
+            state = listState,
+            rows = GridCells.Fixed(Data.heightBlockSize),
+            //verticalArrangement = Arrangement.spacedBy(4.dp),
+            //horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            items(conta) { item ->
+                Box(
+                    modifier = Modifier.size(10.dp).clip(RectangleShape)
+                        .background(Color(linearized[item].r, linearized[item].g, linearized[item].b))
+                )
+            }
+        }
+        Box(modifier = Modifier.padding(start=40.dp)) { redLine() }
+
+    }
+
 }
 
 
@@ -112,8 +143,8 @@ fun App() {
     }
 
     if (Data.showPixels.value) {
-        Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxHeight(0.3f)) { songThingyPixels() }
-    }
+            Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxHeight(0.3f)) { songThingyPixels() }
+        }
 
 
     Column(
