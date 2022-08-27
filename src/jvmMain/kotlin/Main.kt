@@ -1,6 +1,9 @@
 import Data.idx
 import Data.showFileDialog
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -9,6 +12,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -57,6 +64,37 @@ fun fileDialog(
     dispose = FileDialog::dispose
 )
 
+
+@Composable
+fun songThingyPixels() {
+
+    var conta = 0
+    val linearized =
+        arrayListOf<Pixel>() //todo: there's probably a better way to do this, but at this scale it should not matter much
+    for (pixelVerticalRow in Data.pixelVerticalRows) {
+        for (pixel in pixelVerticalRow) {
+            linearized.add(pixel)
+            conta++
+        }
+    }
+
+
+
+    LazyHorizontalGrid(
+        rows = GridCells.Fixed(Data.heightBlockSize),
+        //verticalArrangement = Arrangement.spacedBy(4.dp),
+        //horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        items(conta) { item ->
+            Box(
+                modifier = Modifier.size(10.dp).clip(RectangleShape)
+                    .background(Color(linearized[item].r, linearized[item].g, linearized[item].b))
+            )
+        }
+    }
+}
+
+
 @Composable
 fun App() {
 
@@ -65,6 +103,7 @@ fun App() {
     showFileDialog = remember { mutableStateOf(false) }
     Data.showImage = remember { mutableStateOf(false) }
     Data.isSongLoaded = remember { mutableStateOf(false) }
+    Data.showPixels = remember { mutableStateOf(false) }
     idx = remember { mutableStateOf(0) }
 
 
@@ -72,11 +111,17 @@ fun App() {
         fileDialog {}
     }
 
+    if (Data.showPixels.value) {
+        Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxHeight(0.3f)) { songThingyPixels() }
+    }
+
+
     Column(
         modifier = Modifier.fillMaxWidth().fillMaxHeight(),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
 
         Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
             Button(onClick = { parsePNG() }) {
@@ -103,14 +148,6 @@ fun App() {
 
 }
 
-fun printPixelARGB(pixel: Int) {
-    val alpha = pixel shr 24 and 0xff
-    val red = pixel shr 16 and 0xff
-    val green = pixel shr 8 and 0xff
-    val blue = pixel and 0xff
-    println("argb: $alpha, $red, $green, $blue")
-}
-
 fun parsePNG() {
     val filepath = Data.folder.value
     val imageData = javax.imageio.ImageIO.read(File(filepath))
@@ -128,10 +165,9 @@ fun parsePNG() {
     var internalrow = 0
     var y = 0
     var iBoost = 0
-    while (row < totalrows){
-        println(" ${iBoost} ${internalrow} ${iBoost+y} ")
-        val pixel: Int = imageData.getRGB(internalrow,y+(iBoost*Data.heightBlockSize))
-        val alpha = pixel shr 24 and 0xff
+    while (row < totalrows) {
+        val pixel: Int = imageData.getRGB(internalrow, y + (iBoost * Data.heightBlockSize))
+        val alpha = pixel shr 24 and 0xff //Todo: Alpha can probably be ignored as it does not seem to be used for colors?
         val red = pixel shr 16 and 0xff
         val green = pixel shr 8 and 0xff
         val blue = pixel and 0xff
@@ -139,18 +175,17 @@ fun parsePNG() {
         Data.pixelVerticalRows[row].add(Pixel(red, green, blue))
 
         y++
-        if (y == Data.heightBlockSize){
+        if (y == Data.heightBlockSize) {
             internalrow++
             row++
             y = 0
         }
-        if (internalrow != 0){
-            if ((internalrow).mod(imageData.width) == 0){
-                iBoost ++
+        if (internalrow != 0) {
+            if ((internalrow).mod(imageData.width) == 0) {
+                iBoost++
                 internalrow = 0
             }
         }
-
-
     }
+    Data.showPixels.value = true
 }
