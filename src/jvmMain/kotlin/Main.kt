@@ -5,13 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
@@ -23,6 +22,7 @@ import kotlinx.coroutines.launch
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+import kotlin.math.absoluteValue
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
@@ -75,7 +75,6 @@ fun redLine() {
 
 @Composable
 fun songThingyPixels() {
-    val scope = rememberCoroutineScope()
 
     var conta = 4
     val linearized =
@@ -91,6 +90,12 @@ fun songThingyPixels() {
             linearized.add(pixel)
             conta++
         }
+    }
+
+    //Cheating the UI by adding fake black row at end as well
+    for (i in 0 until 9 * 100) {
+        linearized.add(Pixel(40, 60, 80))
+        conta++
     }
     Box {
 
@@ -126,10 +131,12 @@ fun App() {
     Data.showPixels = remember { mutableStateOf(false) }
     Data.listState = rememberLazyGridState()
     Data.isPlayingSong = remember { mutableStateOf(false) }
-    idx = remember { mutableStateOf(0) }
 
     val scope = rememberCoroutineScope()
+
     var lineNumber by remember { mutableStateOf(0) }
+    val progress by remember { mutableStateOf(0.1f) }
+    var multiplier by remember { mutableStateOf(1) }
 
     if (showFileDialog.value) {
         fileDialog {}
@@ -140,12 +147,24 @@ fun App() {
     }
 
 
+
+
+
+
     Column(
         modifier = Modifier.fillMaxWidth().fillMaxHeight(),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+
+        LinearProgressIndicator(
+            backgroundColor = Color.White,
+
+            progress = (lineNumber.toFloat()) / (Data.pixelVerticalRows.size * 9),
+            color = Color.Blue,
+            modifier = Modifier.padding(top = 100.dp, bottom = 100.dp).align(Alignment.CenterHorizontally).scale(2f)
+        )
 
         Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
             Button(onClick = { parsePNG() }) {
@@ -157,9 +176,12 @@ fun App() {
                         Data.isPlayingSong.value = true
                         scope.launch {
                             while (Data.isPlayingSong.value) {
-                                println(lineNumber)
+                                println("$lineNumber ${Data.pixelVerticalRows.size * 9}")
                                 Data.listState.animateScrollToItem(lineNumber)
-                                lineNumber += Data.heightBlockSize
+                                lineNumber += (Data.heightBlockSize * multiplier)
+                                if (lineNumber + (9 * 3) > (Data.pixelVerticalRows.size * 9)) {
+                                    Data.isPlayingSong.value = false
+                                }
                                 delay(100)
                             }
                         }
@@ -180,6 +202,15 @@ fun App() {
             }
             Button(onClick = { scope.launch { Data.listState.scrollToItem(0); lineNumber = 0 } }) {
                 Text("Restart") //Todo: grey this if song not loaded
+            }
+
+            Button(onClick = {
+                scope.launch {
+                    Data.listState.animateScrollToItem(Data.pixelVerticalRows.size * 9 - (20 *9))
+                    lineNumber = Data.pixelVerticalRows.size * 9 - (20 *9)
+                }
+            }) {
+                Text("DEV")
             }
 
         }

@@ -14,7 +14,7 @@ object Data{
     var widthLayers : Int = 0
     const val heightBlockSize = 9
     const val widthBlockSize = 16
-    lateinit var pixelVerticalRows : ArrayList<ArrayList<Pixel>>
+    var pixelVerticalRows : ArrayList<ArrayList<Pixel>> = arrayListOf()
     lateinit var listState : LazyGridState
     lateinit var isPlayingSong: MutableState<Boolean>
 }
