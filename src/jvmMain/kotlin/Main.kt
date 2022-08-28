@@ -1,13 +1,10 @@
 import Data.idx
 import Data.showFileDialog
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -21,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.awt.FileDialog
 import java.awt.Frame
@@ -69,17 +67,14 @@ fun fileDialog(
 
 
 @Composable
-fun redLine(){
+fun redLine() {
     Box(
-        modifier = Modifier.width(10.dp).fillMaxHeight().clip(RectangleShape).background(Color(255,0,0,100))
+        modifier = Modifier.width(10.dp).fillMaxHeight().clip(RectangleShape).background(Color(255, 0, 0, 100))
     )
 }
 
 @Composable
 fun songThingyPixels() {
-
-
-    val listState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
 
     var conta = 4
@@ -87,8 +82,8 @@ fun songThingyPixels() {
         arrayListOf<Pixel>() //todo: there's probably a better way to do this, but at this scale it should not matter much
 
     //Cheating the UI by adding fake black row at start
-    for (i in 0 until 9*4){
-        linearized.add(Pixel(40,60,80))
+    for (i in 0 until 9 * 4) {
+        linearized.add(Pixel(40, 60, 80))
     }
 
     for (pixelVerticalRow in Data.pixelVerticalRows) {
@@ -97,17 +92,11 @@ fun songThingyPixels() {
             conta++
         }
     }
-    Button(onClick = {
-        scope.launch {
-            listState.scrollBy(10f)}
-    }){
-        Text("scroll")
-    }
-    Box{
+    Box {
 
 
         LazyHorizontalGrid(
-            state = listState,
+            state = Data.listState,
             rows = GridCells.Fixed(Data.heightBlockSize),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -119,7 +108,7 @@ fun songThingyPixels() {
                 )
             }
         }
-        Box(modifier = Modifier.padding(start=40.dp)) { redLine() }
+        Box(modifier = Modifier.padding(start = 40.dp)) { redLine() }
 
     }
 
@@ -135,16 +124,20 @@ fun App() {
     Data.showImage = remember { mutableStateOf(false) }
     Data.isSongLoaded = remember { mutableStateOf(false) }
     Data.showPixels = remember { mutableStateOf(false) }
+    Data.listState = rememberLazyGridState()
+    Data.isPlayingSong = remember { mutableStateOf(false) }
     idx = remember { mutableStateOf(0) }
 
+    val scope = rememberCoroutineScope()
+    var lineNumber by remember { mutableStateOf(0) }
 
     if (showFileDialog.value) {
         fileDialog {}
     }
 
     if (Data.showPixels.value) {
-            Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxHeight(0.3f)) { songThingyPixels() }
-        }
+        Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxHeight(0.3f)) { songThingyPixels() }
+    }
 
 
     Column(
@@ -159,7 +152,25 @@ fun App() {
                 Text("Analyze") //Todo: grey this if song not loaded
             }
             if (Data.isSongLoaded.value) {
-                Button(onClick = { showFileDialog.value = true }) {
+                Button(onClick = {
+                    if (!Data.isPlayingSong.value) {
+                        Data.isPlayingSong.value = true
+                        scope.launch {
+                            while (Data.isPlayingSong.value) {
+                                println(lineNumber)
+                                Data.listState.animateScrollToItem(lineNumber)
+                                lineNumber += Data.heightBlockSize
+                                delay(100)
+                            }
+                        }
+                    } else {
+
+                        Data.isPlayingSong.value = false
+
+                    }
+
+
+                }) {
                     Text("Play/Stop")
                 }
             } else {
@@ -167,7 +178,7 @@ fun App() {
                     Text("Open")
                 }
             }
-            Button(onClick = { showFileDialog.value = true }) {
+            Button(onClick = { scope.launch { Data.listState.scrollToItem(0); lineNumber = 0 } }) {
                 Text("Restart") //Todo: grey this if song not loaded
             }
 
@@ -198,7 +209,8 @@ fun parsePNG() {
     var iBoost = 0
     while (row < totalrows) {
         val pixel: Int = imageData.getRGB(internalrow, y + (iBoost * Data.heightBlockSize))
-        val alpha = pixel shr 24 and 0xff //Todo: Alpha can probably be ignored as it does not seem to be used for colors?
+        val alpha =
+            pixel shr 24 and 0xff //Todo: Alpha can probably be ignored as it does not seem to be used for colors?
         val red = pixel shr 16 and 0xff
         val green = pixel shr 8 and 0xff
         val blue = pixel and 0xff

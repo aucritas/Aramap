@@ -1,3 +1,4 @@
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.MutableState
 
 object Data{
@@ -14,4 +15,6 @@ object Data{
     const val heightBlockSize = 9
     const val widthBlockSize = 16
     lateinit var pixelVerticalRows : ArrayList<ArrayList<Pixel>>
+    lateinit var listState : LazyGridState
+    lateinit var isPlayingSong: MutableState<Boolean>
 }
