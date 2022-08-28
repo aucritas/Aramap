@@ -27,6 +27,11 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation("com.googlecode.soundlibs:tritonus-share:0.3.7-2")
+                implementation("com.googlecode.soundlibs:mp3spi:1.9.5-1")
+                implementation("com.googlecode.soundlibs:vorbisspi:1.0.3-1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+
             }
         }
         val jvmTest by getting

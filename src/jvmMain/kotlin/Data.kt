@@ -2,14 +2,13 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.MutableState
 
 object Data{
-    lateinit var folder: MutableState<String>
+    lateinit var pngFile: MutableState<String>
     lateinit var saveFolder: MutableState<String>
-    var listaFiles: MutableList<String> = arrayListOf()
     lateinit var showFileDialog : MutableState<Boolean>
     lateinit var showPixels : MutableState<Boolean>
-    lateinit var showImage : MutableState<Boolean>
-    lateinit var idx: MutableState<Int>
+    lateinit var isPNGLoaded : MutableState<Boolean>
     lateinit var isSongLoaded : MutableState<Boolean>
+    lateinit var songFile : MutableState<String>
     var heightLayers : Int = 0
     var widthLayers : Int = 0
     const val heightBlockSize = 9
@@ -17,4 +16,6 @@ object Data{
     var pixelVerticalRows : ArrayList<ArrayList<Pixel>> = arrayListOf()
     lateinit var listState : LazyGridState
     lateinit var isPlayingSong: MutableState<Boolean>
+    val player = AudioFilePlayer()
+    var fileDialogType: String = "png"
 }

@@ -1,11 +1,14 @@
-import Data.idx
+import Data.player
 import Data.showFileDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,12 +20,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
-import kotlin.math.absoluteValue
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
@@ -44,20 +47,23 @@ fun fileDialog(
                 super.setVisible(value)
                 if (value) {
                     onCloseRequest(file)
-                    println(files[0].absolutePath) //wtf is this even...
-                    Data.folder.value = files[0].absolutePath
-                    File(Data.folder.value).walk().maxDepth(1).forEach {
+                    when (Data.fileDialogType) {
+                        "png" -> {
+                            println(files[0].absolutePath) //wtf is this even...
+                            Data.pngFile.value = files[0].absolutePath
+                            showFileDialog.value = false
+                            Data.isPNGLoaded.value = true
+                        }
 
-                        if (it.isFile) {
-                            Data.listaFiles.add(it.toString())
-                            println(it.toString())
+                        else -> {
+                            println(files[0].absolutePath) //wtf is this even...
+                            Data.songFile.value = files[0].absolutePath
+                            showFileDialog.value = false
+                            Data.isSongLoaded.value = true
                         }
                     }
-                    if (Data.listaFiles.size > 0) {
-                        Data.showImage.value = true
-                    }
-                    showFileDialog.value = false
-                    Data.isSongLoaded.value = true
+
+
                 }
             }
         }
@@ -123,11 +129,12 @@ fun songThingyPixels() {
 @Composable
 fun App() {
 
-    Data.folder = remember { mutableStateOf("") }
+    Data.pngFile = remember { mutableStateOf("") }
     Data.saveFolder = remember { mutableStateOf("") }
     showFileDialog = remember { mutableStateOf(false) }
-    Data.showImage = remember { mutableStateOf(false) }
+    Data.isPNGLoaded = remember { mutableStateOf(false) }
     Data.isSongLoaded = remember { mutableStateOf(false) }
+    Data.songFile = remember { mutableStateOf("") }
     Data.showPixels = remember { mutableStateOf(false) }
     Data.listState = rememberLazyGridState()
     Data.isPlayingSong = remember { mutableStateOf(false) }
@@ -135,7 +142,6 @@ fun App() {
     val scope = rememberCoroutineScope()
 
     var lineNumber by remember { mutableStateOf(0) }
-    val progress by remember { mutableStateOf(0.1f) }
     var multiplier by remember { mutableStateOf(1) }
 
     if (showFileDialog.value) {
@@ -170,10 +176,13 @@ fun App() {
             Button(onClick = { parsePNG() }) {
                 Text("Analyze") //Todo: grey this if song not loaded
             }
-            if (Data.isSongLoaded.value) {
+            if (Data.isPNGLoaded.value && Data.isSongLoaded.value && Data.showPixels.value) {
                 Button(onClick = {
                     if (!Data.isPlayingSong.value) {
                         Data.isPlayingSong.value = true
+                        scope.launch(Dispatchers.IO) {
+                            player.play(Data.songFile.value)
+                        }
                         scope.launch {
                             while (Data.isPlayingSong.value) {
                                 println("$lineNumber ${Data.pixelVerticalRows.size * 9}")
@@ -196,8 +205,11 @@ fun App() {
                     Text("Play/Stop")
                 }
             } else {
-                Button(onClick = { showFileDialog.value = true }) {
-                    Text("Open")
+                Button(onClick = {
+                    Data.fileDialogType = "png"
+                    showFileDialog.value = true
+                }) {
+                    Text("Open png")
                 }
             }
             Button(onClick = { scope.launch { Data.listState.scrollToItem(0); lineNumber = 0 } }) {
@@ -205,9 +217,18 @@ fun App() {
             }
 
             Button(onClick = {
+                Data.fileDialogType = "song"
+                showFileDialog.value = true
+
+
+            }) {
+                Text("Load Song")
+            }
+
+            Button(onClick = {
                 scope.launch {
-                    Data.listState.animateScrollToItem(Data.pixelVerticalRows.size * 9 - (20 *9))
-                    lineNumber = Data.pixelVerticalRows.size * 9 - (20 *9)
+                    Data.listState.animateScrollToItem(Data.pixelVerticalRows.size * 9 - (20 * 9))
+                    lineNumber = Data.pixelVerticalRows.size * 9 - (20 * 9)
                 }
             }) {
                 Text("DEV")
@@ -222,7 +243,7 @@ fun App() {
 }
 
 fun parsePNG() {
-    val filepath = Data.folder.value
+    val filepath = Data.pngFile.value
     val imageData = javax.imageio.ImageIO.read(File(filepath))
     Data.heightLayers = imageData.height / Data.heightBlockSize
     Data.widthLayers = imageData.width / Data.widthBlockSize
