@@ -120,7 +120,7 @@ fun songThingyPixels() {
                 )
             }
         }
-        Box(modifier = Modifier.padding(start = 40.dp)) { redLine() }
+        Box(modifier = Modifier.padding(start = 42.dp)) { redLine() }
 
     }
 
