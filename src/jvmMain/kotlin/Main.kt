@@ -23,6 +23,7 @@ import androidx.compose.ui.window.application
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -55,7 +56,7 @@ fun fileDialog(
                             Data.isPNGLoaded.value = true
                         }
 
-                        else -> {
+                        "song" -> {
                             println(files[0].absolutePath) //wtf is this even...
                             Data.songFile.value = files[0].absolutePath
                             showFileDialog.value = false
@@ -179,24 +180,32 @@ fun App() {
             if (Data.isPNGLoaded.value && Data.isSongLoaded.value && Data.showPixels.value) {
                 Button(onClick = {
                     if (!Data.isPlayingSong.value) {
+
                         Data.isPlayingSong.value = true
                         scope.launch(Dispatchers.IO) {
                             player.play(Data.songFile.value)
                         }
-                        scope.launch {
+                        scope.launch(Dispatchers.IO) {
                             while (Data.isPlayingSong.value) {
-                                println("$lineNumber ${Data.pixelVerticalRows.size * 9}")
-                                Data.listState.animateScrollToItem(lineNumber)
-                                lineNumber += (Data.heightBlockSize * multiplier)
-                                if (lineNumber + (9 * 3) > (Data.pixelVerticalRows.size * 9)) {
-                                    Data.isPlayingSong.value = false
+                                if (!player.isPaused) {
+                                    //println("$lineNumber ${Data.pixelVerticalRows.size * 9}")
+
+                                    //trick to run update on UI thread, blocking to force smooth animation
+                                    runBlocking(scope.coroutineContext) {
+                                        Data.listState.animateScrollToItem(lineNumber)
+                                    }
+
+                                    lineNumber += (Data.heightBlockSize * multiplier)
+                                    if (lineNumber + (9 * 3) > (Data.pixelVerticalRows.size * 9)) {
+                                        Data.isPlayingSong.value = false
+                                    }
+                                    delay(100)
                                 }
-                                delay(100)
                             }
                         }
                     } else {
 
-                        Data.isPlayingSong.value = false
+                        player.invertpause()
 
                     }
 
@@ -212,7 +221,14 @@ fun App() {
                     Text("Open png")
                 }
             }
-            Button(onClick = { scope.launch { Data.listState.scrollToItem(0); lineNumber = 0 } }) {
+            Button(onClick = {
+                scope.launch {
+                    lineNumber = 0
+                    Data.isPlayingSong.value = false
+                    Data.listState.scrollToItem(0)
+                    player.kill()
+                }
+            }) {
                 Text("Restart") //Todo: grey this if song not loaded
             }
 
