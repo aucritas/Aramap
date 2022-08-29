@@ -87,7 +87,7 @@ fun songThingyPixels() {
     val linearized =
         arrayListOf<Pixel>() //todo: there's probably a better way to do this, but at this scale it should not matter much
 
-    //Cheating the UI by adding fake black row at start
+    //Cheating the UI by adding fake black rows at start
     for (i in 0 until 9 * 4) {
         linearized.add(Pixel(40, 60, 80))
     }
@@ -99,7 +99,7 @@ fun songThingyPixels() {
         }
     }
 
-    //Cheating the UI by adding fake black row at end as well
+    //Cheating the UI by adding fake black rows at end as well
     for (i in 0 until 9 * 100) {
         linearized.add(Pixel(40, 60, 80))
         conta++
@@ -142,8 +142,9 @@ fun App() {
 
     val scope = rememberCoroutineScope()
 
-    var lineNumber by remember { mutableStateOf(0) }
+    var pixelNumber by remember { mutableStateOf(0) }
     var multiplier by remember { mutableStateOf(1) }
+    var animDelay by remember { mutableStateOf(100) }
 
     if (showFileDialog.value) {
         fileDialog {}
@@ -168,7 +169,7 @@ fun App() {
         LinearProgressIndicator(
             backgroundColor = Color.White,
 
-            progress = (lineNumber.toFloat()) / (Data.pixelVerticalRows.size * 9),
+            progress = (pixelNumber.toFloat()) / (Data.pixelVerticalRows.size * 9),
             color = Color.Blue,
             modifier = Modifier.padding(top = 100.dp, bottom = 100.dp).align(Alignment.CenterHorizontally).scale(2f)
         )
@@ -182,6 +183,8 @@ fun App() {
                     if (!Data.isPlayingSong.value) {
 
                         Data.isPlayingSong.value = true
+                        animDelay = ((calculateOggDuration(File(Data.songFile.value)) * 1000) / Data.pixelVerticalRows.size / 1.205).toInt()
+                        //animDelay = 100
                         scope.launch(Dispatchers.IO) {
                             player.play(Data.songFile.value)
                         }
@@ -192,14 +195,14 @@ fun App() {
 
                                     //trick to run update on UI thread, blocking to force smooth animation
                                     runBlocking(scope.coroutineContext) {
-                                        Data.listState.animateScrollToItem(lineNumber)
+                                        Data.listState.animateScrollToItem(pixelNumber)
                                     }
 
-                                    lineNumber += (Data.heightBlockSize * multiplier)
-                                    if (lineNumber + (9 * 3) > (Data.pixelVerticalRows.size * 9)) {
+                                    pixelNumber += (Data.heightBlockSize * multiplier)
+                                    if (pixelNumber + (9 * 3) > (Data.pixelVerticalRows.size * 9)) {
                                         Data.isPlayingSong.value = false
                                     }
-                                    delay(100)
+                                    delay(animDelay.toLong())
                                 }
                             }
                         }
@@ -223,7 +226,7 @@ fun App() {
             }
             Button(onClick = {
                 scope.launch {
-                    lineNumber = 0
+                    pixelNumber = 0
                     Data.isPlayingSong.value = false
                     Data.listState.scrollToItem(0)
                     player.kill()
@@ -244,7 +247,7 @@ fun App() {
             Button(onClick = {
                 scope.launch {
                     Data.listState.animateScrollToItem(Data.pixelVerticalRows.size * 9 - (20 * 9))
-                    lineNumber = Data.pixelVerticalRows.size * 9 - (20 * 9)
+                    pixelNumber = Data.pixelVerticalRows.size * 9 - (20 * 9)
                 }
             }) {
                 Text("DEV")
